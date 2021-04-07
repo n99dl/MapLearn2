@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "587367832194",
+    "project_id": "maplearning-306407",
+    "storage_bucket": "maplearning-306407.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:587367832194:android:4c18d3b4611293f660329b",
+        "android_client_info": {
+          "package_name": "com.n99dl.maplearn"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "587367832194-m0klalkok99c3ida1ea435q7elhfmaqo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7OzkD9GsFrMogmubHcDDlqdLu3fEUobU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "587367832194-m0klalkok99c3ida1ea435q7elhfmaqo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
