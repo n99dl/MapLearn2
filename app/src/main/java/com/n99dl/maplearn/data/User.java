@@ -1,9 +1,10 @@
 package com.n99dl.maplearn.data;
 
 public class User {
-    MyLocation location;
+    private MyLocation location;
     private String id;
-    private String name;
+    private String username;
+    private String imageURL;
 
     public MyLocation getLocation() {
         return location;
@@ -21,20 +22,29 @@ public class User {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getUsername() {
+        return username;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public User() {
     }
 
-    public User(MyLocation location, String id, String name) {
+    public User(MyLocation location, String id, String username, String imageURL) {
         this.location = location;
         this.id = id;
-        this.name = name;
+        this.username = username;
+        this.imageURL = imageURL;
+    }
+
+    public String getImageURL() {
+        return imageURL;
+    }
+
+    public void setImageURL(String imageURL) {
+        this.imageURL = imageURL;
     }
 }

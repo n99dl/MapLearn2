@@ -1,8 +1,10 @@
 package com.n99dl.maplearn;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.content.Intent;
@@ -13,10 +15,14 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -53,7 +59,9 @@ import com.n99dl.maplearn.utilities.GameLogic;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+import de.hdodenhof.circleimageview.CircleImageView;
+
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     enum MapMode {
         NORMAL_VIEW,
@@ -63,14 +71,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public static final int FASTEST_UPDATE_INTERVAL = 2;
     private static final int DEFAULT_UPDATE_INTERVAL = 5;
     private static final int PERMISSIONS_FINE_LOCATION = 99;
+    private ActionBar actionBar;
+    private Toolbar tb_normal, tb_nearby_quest;
     private GoogleMap mMap;
     private MapMode mapMode;
     private DatabaseReference reference, currentUserReference;
     private FirebaseUser firebaseUser;
     private LocationManager manager;
 
+    //UI
+    private CircleImageView iw_profile_image;
+    private TextView tv_username;
+    private ImageButton btn_back;
 
-    private Button btn_logout;
     private boolean isRequestCameraRecenter = true;
     private final int MIN_TIME = 1000;
     private final int MIN_DISTANCE = 0;
@@ -93,6 +106,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapMode = MapMode.NORMAL_VIEW;
         readUser();
 
+        Toast.makeText(this, "Create this activity", Toast.LENGTH_SHORT).show();
         setContentView(R.layout.activity_maps);
 
         manager = (LocationManager) getSystemService(LOCATION_SERVICE);
@@ -117,16 +131,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         questMarkerList = new ArrayList<>();
         playerMarkerList = new ArrayList<>();
 
-        btn_logout = findViewById(R.id.btn_logout);
+        //Ui and button
+        iw_profile_image = findViewById(R.id.iw_profile_image);
+        tv_username = findViewById(R.id.tv_username);
 
-        btn_logout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FirebaseAuth.getInstance().signOut();
-                startActivity(new Intent(getApplicationContext(), LogInActivity.class));
-                finish();
-            }
-        });
+        //end ui
 
         updateGPS();
         readLocationChanges();
@@ -143,7 +152,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     try {
                         User player = snapshot.getValue(User.class);
                         GameManager.getInstance().setPlayer(player);
-                        Toast.makeText(MapsActivity.this, "Logged In, UID: " + player.getId(), Toast.LENGTH_SHORT).show();
+                        tv_username.setText(player.getUsername());
+
+                        if (player.getImageURL().equals("default")) {
+                            Toast.makeText(MapsActivity.this, "default image", Toast.LENGTH_SHORT).show();
+                            iw_profile_image.setImageResource(R.mipmap.ic_profile_default);
+                        } else {
+                            //iw_profile_image.setImageResource(R.mipmap.ic_profile_default);
+                            Glide.with(MapsActivity.this).load(player.getImageURL()).into(iw_profile_image);
+                        }
+                        //Toast.makeText(MapsActivity.this, "Logged In, UID: " + player.getId(), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
                         Toast.makeText(MapsActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
@@ -253,6 +271,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        //Additional UI
+        tb_normal = (Toolbar) findViewById(R.id.toolbar);
+        tb_nearby_quest = findViewById(R.id.tb_nearby_quest);
+        btn_back = findViewById(R.id.btn_back);
+        if (tb_normal == null) {
+            Toast.makeText(this, "No tool bar", Toast.LENGTH_SHORT).show();
+        } else {
+            setSupportActionBar(tb_normal);
+            actionBar = getSupportActionBar();
+            actionBar.setTitle("");
+        }
         mMap = googleMap;
         mMap.setOnMarkerClickListener(this);
         // Add a marker in Sydney and move the camera
@@ -307,6 +336,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void showInQuestPlayers(final Quest quest) {
         if (mapMode == MapMode.NEARBY_PLAYER_VIEW) return;
+//        actionBar.setTitle("Nearby players");
+//        actionBar.setDisplayHomeAsUpEnabled(true);
+        tb_normal.setVisibility(View.GONE);
+        tb_nearby_quest.setVisibility(View.VISIBLE);
+        btn_back = findViewById(R.id.btn_back);
+        btn_back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                GameManager.getInstance().changMode(GameManager.Mode.MAP_VIEW);
+                Intent intent = new Intent(MapsActivity.this, QuestActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+                setBackToMapView();
+            }
+        });
         mapMode = MapMode.NEARBY_PLAYER_VIEW;
         playerMarkerList.clear();
         reference = FirebaseDatabase.getInstance().getReference().child("all_users_locations");
@@ -342,6 +386,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(questBounds.getCenter(), 17.0f));
     }
 
+    private void removeAllOtherPlayerMarker() {
+        for (PlayerMarker playerMarker: playerMarkerList) {
+            playerMarker.getMarker().remove();
+        }
+        playerMarkerList.clear();
+    }
+
+    private void setBackToMapView() {
+        Toast.makeText(this, "setback", Toast.LENGTH_SHORT).show();
+        if (actionBar != null) {
+            removeAllOtherPlayerMarker();
+            this.mapMode = MapMode.NORMAL_VIEW;
+            tb_normal.setVisibility(View.VISIBLE);
+            tb_nearby_quest.setVisibility(View.GONE);
+            //actionBar.setTitle("");
+            mMap.moveCamera(CameraUpdateFactory.zoomTo(15.0f));
+        }
+    }
+
     @Override
     public boolean onMarkerClick(Marker marker) {
         MarkerType markerType = (MarkerType)marker.getTag();
@@ -356,10 +419,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     protected void onResume() {
         super.onResume();
-        Intent intent = getIntent();
         if (GameManager.getInstance().getGameMode() == GameManager.Mode.NEARBY_PLAYER_QUEST) {
             showInQuestPlayers(GameManager.getInstance().getSelectingQuest());
+        } else {
+            setBackToMapView();
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_res, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.it_logout:
+                FirebaseAuth.getInstance().signOut();
+                startActivity(new Intent(getApplicationContext(), LogInActivity.class));
+                finish();
+                return true;
+        }
+        return false;
+    }
 }
