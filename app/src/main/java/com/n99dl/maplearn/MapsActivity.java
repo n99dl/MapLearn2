@@ -5,6 +5,8 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import android.Manifest;
 import android.content.Intent;
@@ -19,6 +21,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,11 +31,13 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
@@ -40,6 +45,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -47,11 +53,17 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.n99dl.maplearn.Fragments.EmptyFragment;
+import com.n99dl.maplearn.Fragments.MainFragmentManager;
+import com.n99dl.maplearn.Fragments.ProfileFragment;
+import com.n99dl.maplearn.Fragments.QuestFragment;
+import com.n99dl.maplearn.Fragments.SocialFragment;
 import com.n99dl.maplearn.MapObject.PlayerMarker;
 import com.n99dl.maplearn.MapObject.QuestMarker;
 import com.n99dl.maplearn.data.GameManager;
 import com.n99dl.maplearn.data.MarkerType;
 import com.n99dl.maplearn.data.MyLocation;
+import com.n99dl.maplearn.data.Player;
 import com.n99dl.maplearn.data.Quest;
 import com.n99dl.maplearn.data.User;
 import com.n99dl.maplearn.utilities.GameLogic;
@@ -63,7 +75,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
-    enum MapMode {
+    public enum MapMode {
         NORMAL_VIEW,
         NEARBY_PLAYER_VIEW
     }
@@ -74,15 +86,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private ActionBar actionBar;
     private Toolbar tb_normal, tb_nearby_quest;
     private GoogleMap mMap;
+    private SupportMapFragment googleSupportMapFragment;
+    private Fragment mapFragment;
     private MapMode mapMode;
     private DatabaseReference reference, currentUserReference;
     private FirebaseUser firebaseUser;
     private LocationManager manager;
 
     //UI
+    private LinearLayout control_btn_layout;
     private CircleImageView iw_profile_image;
     private TextView tv_username;
-    private ImageButton btn_back;
+    private ImageButton btn_back, btn_nav, btn_add_friend;
+    private BottomNavigationView bottom_navigation;
 
     private boolean isRequestCameraRecenter = true;
     private final int MIN_TIME = 1000;
@@ -111,9 +127,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         manager = (LocationManager) getSystemService(LOCATION_SERVICE);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+
+        mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        googleSupportMapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        googleSupportMapFragment.getMapAsync(this);
 
         locationRequest = new LocationRequest();
         locationRequest.setInterval(1000 * DEFAULT_UPDATE_INTERVAL);
@@ -132,28 +151,127 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         playerMarkerList = new ArrayList<>();
 
         //Ui and button
-        iw_profile_image = findViewById(R.id.iw_profile_image);
-        tv_username = findViewById(R.id.tv_username);
+        loadUI();
 
         //end ui
 
         updateGPS();
-        readLocationChanges();
         startLocationUpdate();
     }
 
+    private Fragment selectingFragment;
+    private void loadUI() {
+        control_btn_layout = findViewById(R.id.control_btn_layout);
+        bottom_navigation = findViewById(R.id.bottom_navigation);
+        bottom_navigation.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+                Fragment selectedFragment = null;
+                if (menuItem.getItemId() == R.id.nav_home) {
+                    control_btn_layout.setVisibility(View.VISIBLE);
+                    getSupportFragmentManager().beginTransaction()
+                            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                            .show(mapFragment)
+                            .commit();
+
+                } else {
+                    control_btn_layout.setVisibility(View.GONE);
+                    getSupportFragmentManager().beginTransaction()
+                            .hide(mapFragment)
+                            .commit();
+                }
+                switch (menuItem.getItemId()) {
+                    case R.id.nav_profile:
+                        selectedFragment = MainFragmentManager.getInstance().getProfileFragment();
+                        break;
+                    case R.id.nav_home:
+                        selectedFragment = MainFragmentManager.getInstance().getEmptyFragment();
+                        break;
+                    case R.id.nav_social:
+                        selectedFragment = MainFragmentManager.getInstance().getSocialFragment();
+                        break;
+                    case R.id.nav_quest:
+                        selectedFragment = new QuestFragment();
+                        break;
+                }
+                selectingFragment = selectedFragment;
+                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, selectedFragment).commit();
+
+                return true;
+            }
+        });
+
+        iw_profile_image = findViewById(R.id.iw_profile_image);
+        tv_username = findViewById(R.id.tv_username);
+        btn_nav = findViewById(R.id.btn_nav);
+        btn_nav.setVisibility(View.VISIBLE);
+        btn_add_friend = findViewById(R.id.btn_add_friend);
+        btn_add_friend.setVisibility(View.GONE);
+
+        btn_nav.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Player player = GameManager.getInstance().getPlayer();
+                if (mMap != null && player != null) {
+
+                    MyLocation myLocation = player.getLocation();
+                    LatLng me = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                            .target(me)
+                            .zoom(16.0f)
+                            .bearing(0)
+                            .tilt(25)
+                            .build();
+                    int duration = 1000; //1sec
+                    CameraUpdate center = CameraUpdateFactory.newCameraPosition(cameraPosition);
+                    mMap.animateCamera(center, duration, new GoogleMap.CancelableCallback() {
+                        @Override
+                        public void onFinish() {
+                        }
+
+                        @Override
+                        public void onCancel() {
+                        }
+                    });
+                    Toast.makeText(MapsActivity.this, "move cam", Toast.LENGTH_SHORT).show();
+                } else if (mMap == null) {
+                    Toast.makeText(MapsActivity.this, "map null", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MapsActivity.this, "no player", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        btn_add_friend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MapsActivity.this, AddFriendActivity.class);
+                startActivity(intent);
+            }
+        });
+        iw_profile_image.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MapsActivity.this, ProfileActivity.class);
+                intent.putExtra("profileType","user");
+                startActivity(intent);
+            }
+        });
+    }
     private void readUser() {
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         currentUserReference = FirebaseDatabase.getInstance().getReference().child("Users").child(uid);
-        currentUserReference.addListenerForSingleValueEvent(new ValueEventListener() {
+        currentUserReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
                     try {
-                        User player = snapshot.getValue(User.class);
+                        User user = snapshot.getValue(User.class);
+                        Player player = new Player(user);
                         GameManager.getInstance().setPlayer(player);
                         tv_username.setText(player.getUsername());
 
+                        readLocationChanges();
                         if (player.getImageURL().equals("default")) {
                             Toast.makeText(MapsActivity.this, "default image", Toast.LENGTH_SHORT).show();
                             iw_profile_image.setImageResource(R.mipmap.ic_profile_default);
@@ -206,7 +324,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
     private void readLocationChanges() {
-        reference = currentUserReference.child("location");
+        reference = FirebaseDatabase.getInstance().getReference("all_users_locations").child(GameManager.getInstance().getPlayer().getId());
         reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -299,7 +417,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void saveLocation(Location location) {
-        currentUserReference.child("location").setValue(location);
         if (GameManager.getInstance().getPlayer() != null) {
             reference = FirebaseDatabase.getInstance().getReference().child("all_users_locations").child(GameManager.getInstance().getPlayer().getId());
             MyLocation myLocation = new MyLocation(location.getLatitude(), location.getLongitude());
@@ -338,8 +455,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (mapMode == MapMode.NEARBY_PLAYER_VIEW) return;
 //        actionBar.setTitle("Nearby players");
 //        actionBar.setDisplayHomeAsUpEnabled(true);
+        bottom_navigation.setVisibility(View.GONE);
+        if (tb_normal != null)
         tb_normal.setVisibility(View.GONE);
+        if (tb_nearby_quest != null)
         tb_nearby_quest.setVisibility(View.VISIBLE);
+        btn_add_friend.setVisibility(View.VISIBLE);
         btn_back = findViewById(R.id.btn_back);
         btn_back.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -383,6 +504,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 new LatLng(quest.getLatitude() - GameLogic.MIN_DISTANCE_TO_QUEST_IN_LATLONG, quest.getLongitude() - GameLogic.MIN_DISTANCE_TO_QUEST_IN_LATLONG),
                 new LatLng(quest.getLatitude() + GameLogic.MIN_DISTANCE_TO_QUEST_IN_LATLONG, quest.getLongitude() + GameLogic.MIN_DISTANCE_TO_QUEST_IN_LATLONG)
         );
+        if (mMap != null)
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(questBounds.getCenter(), 17.0f));
     }
 
@@ -394,15 +516,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void setBackToMapView() {
-        Toast.makeText(this, "setback", Toast.LENGTH_SHORT).show();
         if (actionBar != null) {
             removeAllOtherPlayerMarker();
             this.mapMode = MapMode.NORMAL_VIEW;
+            bottom_navigation.setVisibility(View.VISIBLE);
             tb_normal.setVisibility(View.VISIBLE);
             tb_nearby_quest.setVisibility(View.GONE);
             //actionBar.setTitle("");
             mMap.moveCamera(CameraUpdateFactory.zoomTo(15.0f));
         }
+        btn_add_friend.setVisibility(View.GONE);
     }
 
     @Override

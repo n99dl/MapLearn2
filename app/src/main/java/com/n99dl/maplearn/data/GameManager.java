@@ -35,21 +35,31 @@ public class GameManager {
     private List<Quest> availableQuest;
     private MapsActivity mapsActivity;
     private boolean questListready = false;
+    private List<Long> questDoneIds;
 
+    private Player player;
 
-    public User getPlayer() {
+    public Player getPlayer() {
         return player;
     }
 
-    public void setPlayer(final User player) {
+    public void setPlayer(final Player player) {
         this.player = player;
         playerDataReference = FirebaseDatabase.getInstance().getReference().child("Users").child(player.getId());
         addQuestDoneListener();
     }
 
+    public List<Long> getQuestDoneIds() {
+        return questDoneIds;
+    }
+
+    public void removeQuest(Long id) {
+        availableQuest.remove(GameManager.getInstance().getQuest(id));
+    }
     public void addQuestDoneListener(){
-        final List<Long> questDoneIds = new ArrayList<>();
-        playerDataReference.child("doneQuests").addValueEventListener(new ValueEventListener() {
+        questDoneIds = new ArrayList<>();
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("doneQuests").child(player.getId());
+        reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 questDoneIds.clear();
@@ -57,6 +67,8 @@ public class GameManager {
                     HashMap hashMap = (HashMap) dataSnapshot.getValue();
                     Long id = (Long)hashMap.get("id");
                     questDoneIds.add(id);
+                    removeQuest(id);
+                    Log.d("marker remove", "gamemanager");
                     mapsActivity.getQuestMarker(id).selfRemoveFormMap();
                 }
             }
@@ -76,12 +88,23 @@ public class GameManager {
         return playerDataReference;
     }
 
-    private User player;
-
     public boolean isQuestListready() {
         return questListready;
     }
 
+    public void markQuestAsDone() {
+        if (this.getGameMode() != Mode.NEARBY_PLAYER_QUEST)
+        {
+            Log.d("test quest", "not in mode");
+            return;
+        }
+        //update quest
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("id", GameManager.getInstance().getSelectingQuest().getId());
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("doneQuests").child(player.getId());
+        reference.push().setValue(hashMap);
+        changMode(GameManager.Mode.MAP_VIEW);
+    }
     private GameManager() {
         availableQuest = new ArrayList<>();
         this.mode = Mode.MAP_VIEW;

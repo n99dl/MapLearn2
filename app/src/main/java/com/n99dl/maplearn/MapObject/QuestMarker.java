@@ -1,5 +1,7 @@
 package com.n99dl.maplearn.MapObject;
 
+import android.util.Log;
+
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.Marker;
@@ -38,5 +40,6 @@ public class QuestMarker {
     public void selfRemoveFormMap() {
         marker.remove();
         circle.remove();
+        Log.d("marker remove", "selfRemoveFormMap: ");
     }
 }

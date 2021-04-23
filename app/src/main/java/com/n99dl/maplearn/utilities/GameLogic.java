@@ -6,7 +6,7 @@ import android.util.Log;
 
 import com.n99dl.maplearn.data.MyLocation;
 import com.n99dl.maplearn.data.Quest;
-import com.n99dl.maplearn.data.User;
+import com.n99dl.maplearn.data.Player;
 
 public class GameLogic {
 
@@ -21,7 +21,7 @@ public class GameLogic {
         return distance <= MIN_DISTANCE_TO_QUEST;
     }
 
-    public static boolean isInQuestRadius(Quest quest, User player) {
+    public static boolean isInQuestRadius(Quest quest, Player player) {
         return GameLogic.isLocationInQuestRadius(quest, player.getLocation());
     }
 

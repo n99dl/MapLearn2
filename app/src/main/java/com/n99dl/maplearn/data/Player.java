@@ -1,11 +1,18 @@
 package com.n99dl.maplearn.data;
 
-public class User {
+public class Player {
+    private MyLocation location;
     private String id;
     private String username;
     private String imageURL;
 
+    public MyLocation getLocation() {
+        return location;
+    }
 
+    public void setLocation(MyLocation location) {
+        this.location = location;
+    }
 
     public String getId() {
         return id;
@@ -23,13 +30,20 @@ public class User {
         this.username = username;
     }
 
-    public User() {
+    public Player() {
     }
 
-    public User(String id, String username, String imageURL) {
+    public Player(MyLocation location, String id, String username, String imageURL) {
+        this.location = location;
         this.id = id;
         this.username = username;
         this.imageURL = imageURL;
+    }
+
+    public Player(User user) {
+        this.id = user.getId();
+        this.username = user.getUsername();
+        this.imageURL = user.getImageURL();
     }
 
     public String getImageURL() {
