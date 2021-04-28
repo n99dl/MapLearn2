@@ -1,16 +1,26 @@
 package com.n99dl.maplearn.data;
 
-public class FriendRelation {
+public class WaveDetails {
     private String user;
     private String friend;
+    private Long time;
 
-    public FriendRelation(String user, String friend) {
+    public WaveDetails(String user, String friend, Long time) {
         this.user = user;
         this.friend = friend;
+        this.time = time;
     }
 
-    public FriendRelation() {
+    public WaveDetails() {
 
+    }
+
+    public Long getTime() {
+        return time;
+    }
+
+    public void setTime(Long time) {
+        this.time = time;
     }
 
     public String getUser() {

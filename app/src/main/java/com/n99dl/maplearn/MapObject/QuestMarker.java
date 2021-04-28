@@ -38,7 +38,9 @@ public class QuestMarker {
     }
 
     public void selfRemoveFormMap() {
+        if (marker != null)
         marker.remove();
+        if (circle != null)
         circle.remove();
         Log.d("marker remove", "selfRemoveFormMap: ");
     }

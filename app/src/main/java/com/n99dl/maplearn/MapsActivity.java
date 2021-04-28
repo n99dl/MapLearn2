@@ -17,11 +17,15 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -96,13 +100,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     //UI
     private LinearLayout control_btn_layout;
     private CircleImageView iw_profile_image;
-    private TextView tv_username;
+    private TextView tv_username, tv_nearby_quest_guide;
     private ImageButton btn_back, btn_nav, btn_add_friend;
     private BottomNavigationView bottom_navigation;
 
     private boolean isRequestCameraRecenter = true;
     private final int MIN_TIME = 1000;
     private final int MIN_DISTANCE = 0;
+    private boolean isAQuestDone;
 
     FusedLocationProviderClient fusedLocationProviderClient;
     LocationRequest locationRequest;
@@ -204,9 +209,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         iw_profile_image = findViewById(R.id.iw_profile_image);
         tv_username = findViewById(R.id.tv_username);
         btn_nav = findViewById(R.id.btn_nav);
+        tv_nearby_quest_guide = findViewById(R.id.tv_nearby_quest_guide);
         btn_nav.setVisibility(View.VISIBLE);
         btn_add_friend = findViewById(R.id.btn_add_friend);
         btn_add_friend.setVisibility(View.GONE);
+        tv_nearby_quest_guide.setVisibility(View.GONE);
 
         btn_nav.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -391,7 +398,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
         //Additional UI
         tb_normal = (Toolbar) findViewById(R.id.toolbar);
+        //tb_normal.setVisibility(View.GONE);
         tb_nearby_quest = findViewById(R.id.tb_nearby_quest);
+        tb_nearby_quest.setVisibility(View.GONE);
         btn_back = findViewById(R.id.btn_back);
         if (tb_normal == null) {
             Toast.makeText(this, "No tool bar", Toast.LENGTH_SHORT).show();
@@ -443,8 +452,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void questClicked(Quest quest) {
         if (GameLogic.isInQuestRadius(quest, GameManager.getInstance().getPlayer())) {
 //            showInQuestPlayers(quest);
+            GameManager.getInstance().setSelectingQuest(quest);
             Intent intent = new Intent(this, QuestActivity.class);
-            intent.putExtra("questId", quest.getId());
             startActivity(intent);
         } else {
             Toast.makeText(this, "You have to be within the quest circle to do this quest", Toast.LENGTH_LONG).show();
@@ -455,6 +464,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (mapMode == MapMode.NEARBY_PLAYER_VIEW) return;
 //        actionBar.setTitle("Nearby players");
 //        actionBar.setDisplayHomeAsUpEnabled(true);
+        tv_nearby_quest_guide.setVisibility(View.VISIBLE);
         bottom_navigation.setVisibility(View.GONE);
         if (tb_normal != null)
         tb_normal.setVisibility(View.GONE);
@@ -522,6 +532,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             bottom_navigation.setVisibility(View.VISIBLE);
             tb_normal.setVisibility(View.VISIBLE);
             tb_nearby_quest.setVisibility(View.GONE);
+            tv_nearby_quest_guide.setVisibility(View.GONE);
             //actionBar.setTitle("");
             mMap.moveCamera(CameraUpdateFactory.zoomTo(15.0f));
         }
@@ -559,11 +570,48 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.it_logout:
+                GameManager.getInstance().logOut();
                 FirebaseAuth.getInstance().signOut();
                 startActivity(new Intent(getApplicationContext(), LogInActivity.class));
                 finish();
                 return true;
         }
         return false;
+    }
+    public void showQuestDonePopupWPopUp() {
+        findViewById(R.id.map_activity_root).post(new Runnable() {
+            @Override
+            public void run() {
+                showQuestDonePopupWindowClick(findViewById(R.id.map_activity_root));
+            }
+        });
+    }
+    public void showQuestDonePopupWindowClick(View view) {
+
+        // inflate the layout of the popup window
+        LayoutInflater inflater = (LayoutInflater)
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.quest_done_popup_window, null);
+        TextView tv_pop_up = popupView.findViewById(R.id.tv_pop_up);
+        tv_pop_up.setText("Congratulation! Your quest in " + GameManager.getInstance().getSelectingQuest().getName() + " is done!");
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        boolean focusable = true; // lets taps outside the popup also dismiss it
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+
+        // show the popup window
+        // which view you pass in doesn't matter, it is only used for the window tolken
+        popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0);
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                popupWindow.dismiss();
+                return true;
+            }
+        });
     }
 }

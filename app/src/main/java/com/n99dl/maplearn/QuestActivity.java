@@ -9,15 +9,23 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.n99dl.maplearn.data.GameManager;
 import com.n99dl.maplearn.data.Quest;
 
+import org.w3c.dom.Text;
+
 import java.util.HashMap;
+
+import de.hdodenhof.circleimageview.CircleImageView;
 
 public class QuestActivity extends AppCompatActivity {
 
-    private Button btn_socialize;
+    private Button btn_socialize, btn_quiz;
+    private TextView tv_quest_name, tv_quest_guide;
+    private CircleImageView iv_quest_image;
 
     Intent intent;
 
@@ -26,20 +34,30 @@ public class QuestActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quest);
+        btn_socialize = findViewById(R.id.btn_socialize);
+        btn_quiz = findViewById(R.id.btn_quiz);
+        tv_quest_name = findViewById(R.id.tv_quest_name);
+        tv_quest_guide = findViewById(R.id.tv_quest_guide);
+        iv_quest_image = findViewById(R.id.iv_quest_image);
         intent = getIntent();
-
-        final Long id = intent.getLongExtra("questId", -1);
-        quest = GameManager.getInstance().getQuest(id);
-        if (quest == null)
-            finish();
-
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle(quest.getName());
 
-        btn_socialize = findViewById(R.id.btn_socialize);
+        final Long id = intent.getLongExtra("questId", -1);
+        quest = GameManager.getInstance().getSelectingQuest();
+
+        if (quest == null)
+            finish();
+
+        tv_quest_name.setText(quest.getName());
+        if (quest.getImageURL().equals("default")) {
+            iv_quest_image.setImageResource(R.mipmap.ic_profile_default);
+        } else {
+            Glide.with(getApplicationContext()).load(quest.getImageURL()).into(iv_quest_image);
+        }
+
         btn_socialize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -52,6 +70,16 @@ public class QuestActivity extends AppCompatActivity {
                 Intent intent = new Intent(QuestActivity.this, MapsActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
+                finish();
+            }
+        });
+
+        btn_quiz.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(QuestActivity.this, QuizPrepareActivity.class);
+                startActivity(intent);
+                finish();
             }
         });
     }
@@ -60,6 +88,7 @@ public class QuestActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case (android.R.id.home):
+//                GameManager.getInstance().clearSelectingQuest();
                 Intent intent = new Intent(QuestActivity.this, MapsActivity.class);
                 startActivity(intent);
                 finish();

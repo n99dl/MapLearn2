@@ -3,20 +3,24 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
 
-import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,8 +29,6 @@ import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -36,7 +38,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
-import com.n99dl.maplearn.data.FriendRelation;
+import com.n99dl.maplearn.data.WaveDetails;
 import com.n99dl.maplearn.data.GameManager;
 import com.n99dl.maplearn.data.MyLocation;
 import com.n99dl.maplearn.data.User;
@@ -50,7 +52,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     CircleImageView profileImage;
     TextView username;
-    Button friendButton;
+    private Button btn_wave;
 
     DatabaseReference reference;
 
@@ -58,6 +60,18 @@ public class ProfileActivity extends AppCompatActivity {
     private static final int IMAGE_REQUEST = 1;
     private Uri imageUri;
     private StorageTask uploadTask;
+
+    private enum ProfileMode {
+        READ,
+        EDIT
+    };
+    private ProfileActivity.ProfileMode mode;
+    private boolean isFullNameSet;
+
+    private TextView tv_username, tv_questDoneCount, tv_quizDoneCount, tv_email, tv_edit_profilePic, tv_fullname_title;
+    private CircleImageView iv_profile_image;
+    private EditText et_fullname;
+    private ImageButton btn_settings;
 
     Intent intent;
 
@@ -77,10 +91,17 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        profileImage = findViewById(R.id.profile_image);
-        username = findViewById(R.id.username);
-        friendButton = findViewById(R.id.friend_button);
-
+        profileImage = findViewById(R.id.iv_profile_image);
+        username = findViewById(R.id.tv_username);
+        btn_wave = findViewById(R.id.btn_wave);
+        tv_questDoneCount = findViewById(R.id.tv_questDoneCount);
+        tv_quizDoneCount = findViewById(R.id.tv_quizDoneCount);
+        tv_email = findViewById(R.id.tv_email);
+        iv_profile_image = findViewById(R.id.iv_profile_image);
+        et_fullname = findViewById(R.id.et_fullname);
+        tv_edit_profilePic = findViewById(R.id.tv_edit_profilePic);
+        tv_fullname_title = findViewById(R.id.tv_fullname_title);
+        btn_settings = findViewById(R.id.btn_settings);
 
 
         intent = getIntent();
@@ -92,7 +113,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         storageReference = FirebaseStorage.getInstance().getReference("profile_image_uploads");
 
-        processAddFriendButton(GameManager.getInstance().getPlayer().getId(), userId);
+        processWaveFriendButton(GameManager.getInstance().getPlayer().getId(), userId);
 
 
         reference = FirebaseDatabase.getInstance().getReference("Users").child(userId);
@@ -108,52 +129,23 @@ public class ProfileActivity extends AppCompatActivity {
                 } else {
                     Glide.with(getApplicationContext()).load(user.getImageURL()).into(profileImage);
                 }
+                tv_email.setText(user.getEmail());
+                if (!user.getFullname().equals("default")) {
+                    et_fullname.setText(user.getFullname());
+                }
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
         });
 
-        Log.d("ProfileTest", "onCreate: " + profileType);
-
-        if (profileType.equals("user")) {
-            TextView editProfileGuide = findViewById(R.id.editImageProfile);
-            editProfileGuide.setVisibility(View.VISIBLE);
-            friendButton.setVisibility(View.GONE);
-            profileImage.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    openImage();
-                }
-            });
-        }
-
-    }
-
-    private void addFriend(String userid, String friendId) {
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
-        HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("user", userid);
-        hashMap.put("friend", friendId);
-        reference.child("Friends_list").push().setValue(hashMap);
-
-        reference = FirebaseDatabase.getInstance().getReference("all_users_locations").child(friendId);
-        reference.addListenerForSingleValueEvent(new ValueEventListener() {
+        DatabaseReference questReference = FirebaseDatabase.getInstance().getReference().child("doneQuests").child(userId);
+        questReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                MyLocation location = snapshot.getValue(MyLocation.class);
-                assert  GameManager.getInstance().getSelectingQuest() != null;
-                if (GameLogic.isLocationInQuestRadius(GameManager.getInstance().getSelectingQuest(), location)) {
-                    Toast.makeText(ProfileActivity.this, "Quest done !", Toast.LENGTH_SHORT).show();
-
-                    //update quest
-                    GameManager.getInstance().markQuestAsDone();
-                    Intent intent = new Intent(ProfileActivity.this, MapsActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    startActivity(intent);
-                    finish();
+                if (snapshot.exists()) {
+                    tv_questDoneCount.setText("" + snapshot.getChildrenCount());
                 }
             }
 
@@ -162,23 +154,82 @@ public class ProfileActivity extends AppCompatActivity {
 
             }
         });
-        friendButton.setVisibility(View.GONE);
+
+        DatabaseReference quizReference = FirebaseDatabase.getInstance().getReference().child("quiz_highscore").child(userId);
+        quizReference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    tv_quizDoneCount.setText("" + snapshot.getChildrenCount());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+        et_fullname.setEnabled(false);
+        et_fullname.setInputType(InputType.TYPE_NULL);
+        btn_settings.setVisibility(View.GONE);
     }
 
-    private void processAddFriendButton(final String userid, final String friendId) {
+    private void waveAt(String userid, String friendId, long time) {
         DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
-        reference =  FirebaseDatabase.getInstance().getReference("Friends_list");
-        final boolean[] alreadyFriend = {false};
-        reference.addValueEventListener(new ValueEventListener() {
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("user", userid);
+        hashMap.put("friend", friendId);
+        hashMap.put("time", time);
+        String key = userid + "," + friendId;
+        reference.child("Wave_list").child(key).setValue(hashMap);
+        reference = FirebaseDatabase.getInstance().getReference("all_users_locations").child(friendId);
+        reference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                MyLocation location = snapshot.getValue(MyLocation.class);
+                assert  GameManager.getInstance().getSelectingQuest() != null;
+                if (GameLogic.isLocationInQuestRadius(GameManager.getInstance().getSelectingQuest(), location)) {
+                    GameManager.getInstance().markQuestAsDone();
+                    findViewById(R.id.profile_activity_root).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            showQuestDonePopupWindowClick(findViewById(R.id.profile_activity_root));
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+        btn_wave.setVisibility(View.GONE);
+    }
+
+    private void doneQuest() {
+        //update quest
+//        GameManager.getInstance().clearSelectingQuest();
+        Intent intent = new Intent(ProfileActivity.this, MapsActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private void processWaveFriendButton(final String userid, final String friendId) {
+        DatabaseReference reference ;
+        String key = userid + "," + friendId;
+        reference =  FirebaseDatabase.getInstance().getReference().child("Wave_list").child(key);
+        final long[] time = {0};
+        reference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot snapshot: dataSnapshot.getChildren()){
-                    FriendRelation friendRelation = snapshot.getValue(FriendRelation.class);
+                if (dataSnapshot.exists()){
+                    WaveDetails waveDetails = dataSnapshot.getValue(WaveDetails.class);
 
-                    if (userid.equals(friendRelation.getUser()) && friendId.equals(friendRelation.getFriend())) {
-                        friendButton.setVisibility(View.GONE);
-                        Log.d("friended", "onDataChange: true");
-                        break;
+                    if (userid.equals(waveDetails.getUser()) && friendId.equals(waveDetails.getFriend())) {
+                        time[0] = waveDetails.getTime();
+                        btn_wave.setText("   Wave ! (" + time[0] + " already!)      ");
                     }
                 }
             }
@@ -188,16 +239,13 @@ public class ProfileActivity extends AppCompatActivity {
 
             }
         });
-
-        if (friendButton.getVisibility() != View.GONE) {
-            friendButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    addFriend(userid, friendId);
-                    Toast.makeText(ProfileActivity.this, "Add friend success", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+        btn_wave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                waveAt(userid, friendId, time[0] + 1);
+                Toast.makeText(ProfileActivity.this, "Wave success", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void openImage() {
@@ -273,5 +321,35 @@ public class ProfileActivity extends AppCompatActivity {
                 uploadImage();
             }
         }
+    }
+
+    public void showQuestDonePopupWindowClick(View view) {
+
+        // inflate the layout of the popup window
+        LayoutInflater inflater = (LayoutInflater)
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.quest_done_popup_window, null);
+        TextView tv_pop_up = popupView.findViewById(R.id.tv_pop_up);
+        tv_pop_up.setText("Congratulation! Your quest in " + GameManager.getInstance().getSelectingQuest().getName() + " is done!");
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        boolean focusable = true; // lets taps outside the popup also dismiss it
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+
+        // show the popup window
+        // which view you pass in doesn't matter, it is only used for the window tolken
+        popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0);
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                popupWindow.dismiss();
+                doneQuest();
+                return true;
+            }
+        });
     }
 }

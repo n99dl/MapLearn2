@@ -67,7 +67,7 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
-    private void register(final String username, String email, String password) {
+    private void register(final String username, final String email, String password) {
         firebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
@@ -81,6 +81,8 @@ public class RegisterActivity extends AppCompatActivity {
                     hashMap.put("id", userId);
                     hashMap.put("username", username);
                     hashMap.put("imageURL", "default");
+                    hashMap.put("fullname","default");
+                    hashMap.put("email", email);
 
                     Log.d("Log In", "success");
                     reference.setValue(hashMap).addOnCompleteListener(new OnCompleteListener<Void>() {

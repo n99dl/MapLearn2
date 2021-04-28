@@ -4,12 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".QuestActivity"
-    android:background="@color/colorPrimary">
-
-    <include
-        android:id="@+id/toolbar"
-        layout="@layout/bar_layout"/>
+    android:background="@color/colorPrimary"
+    tools:context=".QuizPrepareActivity">
 
     <TextView
         android:id="@+id/tv_quest_name"
@@ -23,7 +19,7 @@
         android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/iv_quest_image"
@@ -34,47 +30,31 @@
         app:layout_constraintTop_toBottomOf="@+id/tv_quest_name"
         tools:layout_editor_absoluteX="16dp" />
 
-    <Button
-        android:id="@+id/btn_socialize"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="44dp"
-        android:text="Socialize"
-        android:textStyle="bold"
-        android:background="@color/colorPrimary"
-        android:textColor="@color/colorTextDark"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.304"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/iv_quest_image" />
-
-    <Button
-        android:id="@+id/btn_quiz"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="44dp"
-        android:text="Do Quiz"
-        android:textStyle="bold"
-        android:background="@color/colorPrimary"
-        android:textColor="@color/colorTextDark"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.699"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/iv_quest_image" />
-
     <TextView
-        android:id="@+id/tv_quest_guide"
+        android:id="@+id/tv_introduce"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
-        android:textSize="16sp"
-        android:textColor="@color/colorTextDark"
-        android:textStyle="italic"
+        android:layout_marginTop="60dp"
         android:gravity="center"
-        android:text="Select your refered way to do this location quest"
+        android:text="Test your knowledge about this location\nAnswer correct 80% or more to complete"
+        android:textColor="@color/colorTextDark"
+        android:textSize="17sp"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_socialize" />
+        app:layout_constraintTop_toBottomOf="@+id/iv_quest_image" />
+
+    <Button
+        android:id="@+id/btn_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="68dp"
+        android:text="Start"
+        android:textStyle="bold"
+        android:background="@color/colorPrimary"
+        android:textColor="@color/colorTextDark"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

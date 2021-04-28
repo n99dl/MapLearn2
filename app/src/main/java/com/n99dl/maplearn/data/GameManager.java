@@ -5,6 +5,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -33,9 +34,11 @@ public class GameManager {
     }
 
     private List<Quest> availableQuest;
+    private List<Quest> allQuest;
     private MapsActivity mapsActivity;
     private boolean questListready = false;
     private List<Long> questDoneIds;
+    private Quiz quiz;
 
     private Player player;
 
@@ -43,9 +46,37 @@ public class GameManager {
         return player;
     }
 
-    public void setPlayer(final Player player) {
-        this.player = player;
+    public void setPlayer(final Player _player) {
+        this.player = _player;
         playerDataReference = FirebaseDatabase.getInstance().getReference().child("Users").child(player.getId());
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("doneQuests").child(player.getId());
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    player.setTotalQuestDone((int)snapshot.getChildrenCount());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+        reference = FirebaseDatabase.getInstance().getReference().child("quiz_highscore").child(player.getId());
+        reference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    player.setTotalQuizDone((int)snapshot.getChildrenCount());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
         addQuestDoneListener();
     }
 
@@ -69,6 +100,8 @@ public class GameManager {
                     questDoneIds.add(id);
                     removeQuest(id);
                     Log.d("marker remove", "gamemanager");
+                    //not already removed
+                    if (mapsActivity.getQuestMarker(id) != null)
                     mapsActivity.getQuestMarker(id).selfRemoveFormMap();
                 }
             }
@@ -93,11 +126,10 @@ public class GameManager {
     }
 
     public void markQuestAsDone() {
-        if (this.getGameMode() != Mode.NEARBY_PLAYER_QUEST)
-        {
-            Log.d("test quest", "not in mode");
+        if (selectingQuest == null)
             return;
-        }
+        if (questDoneIds.contains(selectingQuest.getId()))
+            return;
         //update quest
         HashMap<String, Object> hashMap = new HashMap<>();
         hashMap.put("id", GameManager.getInstance().getSelectingQuest().getId());
@@ -107,6 +139,7 @@ public class GameManager {
     }
     private GameManager() {
         availableQuest = new ArrayList<>();
+        allQuest = new ArrayList<>();
         this.mode = Mode.MAP_VIEW;
         //LoadQuest();
     }
@@ -125,6 +158,7 @@ public class GameManager {
                 for (DataSnapshot postSnapshot: snapshot.getChildren()) {
                     Quest quest = postSnapshot.getValue(Quest.class);
                     availableQuest.add(quest);
+                    allQuest.add(quest);
                 }
                 Log.d("Quest","Client read quests list count: " + availableQuest.size());
                 Log.d("Quest","Quest 0: " + availableQuest.get(1).toString());
@@ -144,7 +178,7 @@ public class GameManager {
     }
 
     public Quest getQuest(long id) {
-        for (Quest quest: availableQuest) {
+        for (Quest quest: allQuest) {
             if (quest.getId() == id)
                 return quest;
         }
@@ -159,13 +193,55 @@ public class GameManager {
         return this.mode;
     }
     public Quest getSelectingQuest() {
-        if (mode == Mode.MAP_VIEW) return null;
         return selectingQuest;
+    }
+    public void clearSelectingQuest() {
+        selectingQuest = null;
     }
 
     public void setSelectingQuest(Quest selectingQuest) {
-        if (mode == Mode.MAP_VIEW) return;
         this.selectingQuest = selectingQuest;
+    }
+
+    public Quiz getQuiz() {
+        return quiz;
+    }
+
+    public void loadQuiz() {
+        quiz = new Quiz();
+        reference = FirebaseDatabase.getInstance().getReference().child("quest_quizs").child(String.valueOf(selectingQuest.getId()));
+        reference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot dataSnapshot: snapshot.getChildren()) {
+                    Question question = dataSnapshot.getValue(Question.class);
+                    quiz.getQuestionList().add(question);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+    }
+    public void setQuestScore(int correctAnsCount) {
+        float score = ((float)correctAnsCount)/((float)quiz.getQuestionList().size());
+        quiz.setCurrentHighScore(Math.max(score, quiz.getCurrentHighScore()));
+        reference = FirebaseDatabase.getInstance().getReference()
+                .child("quiz_highscore")
+                .child(GameManager.getInstance().getPlayer().getId());
+        HashMap<String, Float> hashMap = new HashMap<>();
+        hashMap.put("score", score);
+        reference.push().setValue(hashMap);
+        if (score >= 0.8) {
+            markQuestAsDone();
+        }
+    }
+
+    public void logOut() {
+        FirebaseAuth.getInstance().signOut();
+        GameManager.INSTANCE = null;
     }
 
     //Singleton

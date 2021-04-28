@@ -19,7 +19,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ProfileActivity"></activity>
+        <activity android:name=".QuizScoreActivity"></activity>
+        <activity android:name=".QuestionActivity" />
+        <activity android:name=".QuizPrepareActivity" />
+        <activity android:name=".ProfileActivity" />
         <activity android:name=".AddFriendActivity" />
         <activity android:name=".QuestActivity" />
         <activity android:name=".LogInActivity">
@@ -41,6 +44,9 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
 
         <activity
             android:name=".MapsActivity"

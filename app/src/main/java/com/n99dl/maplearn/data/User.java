@@ -4,8 +4,24 @@ public class User {
     private String id;
     private String username;
     private String imageURL;
+    private String fullname;
+    private String email;
 
+    public String getEmail() {
+        return email;
+    }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getFullname() {
+        return fullname;
+    }
+
+    public void setFullname(String fullname) {
+        this.fullname = fullname;
+    }
 
     public String getId() {
         return id;
@@ -26,10 +42,12 @@ public class User {
     public User() {
     }
 
-    public User(String id, String username, String imageURL) {
+    public User(String id, String username, String imageURL, String fullname, String email) {
         this.id = id;
         this.username = username;
         this.imageURL = imageURL;
+        this.fullname = fullname;
+        this.email = email;
     }
 
     public String getImageURL() {
