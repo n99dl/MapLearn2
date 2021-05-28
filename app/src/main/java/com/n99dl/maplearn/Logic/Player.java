@@ -1,4 +1,6 @@
-package com.n99dl.maplearn.data;
+package com.n99dl.maplearn.Logic;
+
+import com.n99dl.maplearn.Model.User;
 
 public class Player {
     private MyLocation location;

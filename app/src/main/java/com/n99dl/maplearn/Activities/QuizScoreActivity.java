@@ -1,11 +1,10 @@
-package com.n99dl.maplearn;
+package com.n99dl.maplearn.Activities;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,8 +19,9 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.n99dl.maplearn.data.GameManager;
-import com.n99dl.maplearn.data.Quiz;
+import com.n99dl.maplearn.Logic.GameManager;
+import com.n99dl.maplearn.Logic.Quiz;
+import com.n99dl.maplearn.R;
 
 public class QuizScoreActivity extends AppCompatActivity {
 

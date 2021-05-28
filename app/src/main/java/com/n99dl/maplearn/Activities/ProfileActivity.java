@@ -1,12 +1,15 @@
-package com.n99dl.maplearn;
+package com.n99dl.maplearn.Activities;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
@@ -33,20 +36,32 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
-import com.n99dl.maplearn.data.WaveDetails;
-import com.n99dl.maplearn.data.GameManager;
-import com.n99dl.maplearn.data.MyLocation;
-import com.n99dl.maplearn.data.User;
+import com.n99dl.maplearn.Logic.DatabaseKey;
+import com.n99dl.maplearn.Notification.APIService;
+import com.n99dl.maplearn.Notification.Client;
+import com.n99dl.maplearn.Notification.Data;
+import com.n99dl.maplearn.Notification.MyResponse;
+import com.n99dl.maplearn.Notification.Sender;
+import com.n99dl.maplearn.Notification.Token;
+import com.n99dl.maplearn.Model.WaveDetails;
+import com.n99dl.maplearn.Logic.GameManager;
+import com.n99dl.maplearn.Logic.MyLocation;
+import com.n99dl.maplearn.Model.User;
+import com.n99dl.maplearn.R;
 import com.n99dl.maplearn.utilities.GameLogic;
 
 import java.util.HashMap;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -75,6 +90,8 @@ public class ProfileActivity extends AppCompatActivity {
 
     Intent intent;
 
+    APIService apiService;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,7 +104,7 @@ public class ProfileActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(ProfileActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                startActivity(new Intent(ProfileActivity.this, MapsActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
             }
         });
 
@@ -116,7 +133,7 @@ public class ProfileActivity extends AppCompatActivity {
         processWaveFriendButton(GameManager.getInstance().getPlayer().getId(), userId);
 
 
-        reference = FirebaseDatabase.getInstance().getReference("Users").child(userId);
+        reference = FirebaseDatabase.getInstance().getReference(DatabaseKey.KEY_USER).child(userId);
 
         reference.addValueEventListener(new ValueEventListener() {
             @Override
@@ -140,7 +157,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        DatabaseReference questReference = FirebaseDatabase.getInstance().getReference().child("doneQuests").child(userId);
+        DatabaseReference questReference = FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_DONE_QUEST).child(userId);
         questReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -155,7 +172,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        DatabaseReference quizReference = FirebaseDatabase.getInstance().getReference().child("quiz_highscore").child(userId);
+        DatabaseReference quizReference = FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_QUIZ_HIGHSCORE).child(userId);
         quizReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -172,8 +189,10 @@ public class ProfileActivity extends AppCompatActivity {
         et_fullname.setEnabled(false);
         et_fullname.setInputType(InputType.TYPE_NULL);
         btn_settings.setVisibility(View.GONE);
+        apiService = Client.getClient("https://fcm.googleapis.com/").create(APIService.class);
     }
 
+    @SuppressLint("NewApi")
     private void waveAt(String userid, String friendId, long time) {
         DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
         HashMap<String, Object> hashMap = new HashMap<>();
@@ -181,21 +200,24 @@ public class ProfileActivity extends AppCompatActivity {
         hashMap.put("friend", friendId);
         hashMap.put("time", time);
         String key = userid + "," + friendId;
-        reference.child("Wave_list").child(key).setValue(hashMap);
-        reference = FirebaseDatabase.getInstance().getReference("all_users_locations").child(friendId);
+        reference.child(DatabaseKey.KEY_WAVE_LIST).child(key).setValue(hashMap);
+        reference = FirebaseDatabase.getInstance().getReference(DatabaseKey.KEY_LOCATION).child(friendId);
+        //check location of this player, by get it from the databse
         reference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 MyLocation location = snapshot.getValue(MyLocation.class);
-                assert  GameManager.getInstance().getSelectingQuest() != null;
-                if (GameLogic.isLocationInQuestRadius(GameManager.getInstance().getSelectingQuest(), location)) {
-                    GameManager.getInstance().markQuestAsDone();
-                    findViewById(R.id.profile_activity_root).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            showQuestDonePopupWindowClick(findViewById(R.id.profile_activity_root));
-                        }
-                    });
+                if (GameManager.getInstance().getSelectingQuest() != null)
+                {
+                    if (GameLogic.isLocationInQuestRadius(GameManager.getInstance().getSelectingQuest(), location)) {
+                        GameManager.getInstance().markQuestAsDone();
+                        findViewById(R.id.profile_activity_root).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                showQuestDonePopupWindowClick(findViewById(R.id.profile_activity_root));
+                            }
+                        });
+                    }
                 }
             }
 
@@ -204,7 +226,9 @@ public class ProfileActivity extends AppCompatActivity {
 
             }
         });
-        btn_wave.setVisibility(View.GONE);
+        sendNotification(friendId, GameManager.getInstance().getPlayer().getUsername(), "wave");
+        btn_wave.setEnabled(false);
+        btn_wave.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
     }
 
     private void doneQuest() {
@@ -219,7 +243,7 @@ public class ProfileActivity extends AppCompatActivity {
     private void processWaveFriendButton(final String userid, final String friendId) {
         DatabaseReference reference ;
         String key = userid + "," + friendId;
-        reference =  FirebaseDatabase.getInstance().getReference().child("Wave_list").child(key);
+        reference =  FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_WAVE_LIST).child(key);
         final long[] time = {0};
         reference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -285,7 +309,7 @@ public class ProfileActivity extends AppCompatActivity {
                         Uri downloadUri = task.getResult();
                         String mUri = downloadUri.toString();
 
-                        reference = FirebaseDatabase.getInstance().getReference("Users").child(GameManager.getInstance().getPlayer().getId());
+                        reference = FirebaseDatabase.getInstance().getReference(DatabaseKey.KEY_USER).child(GameManager.getInstance().getPlayer().getId());
                         HashMap<String, Object> hashMap = new HashMap<>();
                         hashMap.put("imageURL",mUri);
                         reference.updateChildren(hashMap);
@@ -349,6 +373,45 @@ public class ProfileActivity extends AppCompatActivity {
                 popupWindow.dismiss();
                 doneQuest();
                 return true;
+            }
+        });
+    }
+
+    private void sendNotification(final String receiver, final String username, final String message) {
+        DatabaseReference tokens = FirebaseDatabase.getInstance().getReference("Tokens");
+        Query query = tokens.orderByKey().equalTo(receiver);
+        query.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot snapshot: dataSnapshot.getChildren()) {
+                    Token token =  snapshot.getValue(Token.class);
+                    Data data = new Data(GameManager.getInstance().getPlayer().getId(), R.drawable.ic_message_notify , username + ": " + message,
+                            "Wave !", receiver);
+                    Sender sender = new Sender(data, token.getToken());
+                    Log.d("test noti", "onDataChange: " + token.getToken());
+                    apiService.sendNotification(sender)
+                            .enqueue(new Callback<MyResponse>() {
+                                @Override
+                                public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
+                                    Log.d("test bug", "onResponse: " + response.code() + message);
+                                    if (response.code() == 200) {
+                                        if (response.body().success == 1) {
+                                            Log.d("test bug", "onResponse: success");
+                                        }
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<MyResponse> call, Throwable throwable) {
+
+                                }
+                            });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
             }
         });
     }

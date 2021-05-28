@@ -13,7 +13,7 @@
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".MapsActivity" />
+        tools:context=".Activities.MapsActivity" />
 
     <include
         android:id="@+id/tb_nearby_quest"
@@ -28,7 +28,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="10dp"
         android:layout_marginLeft="10dp"
-        android:layout_marginBottom="60dp"
+        android:layout_marginBottom="80dp"
 
         android:orientation="vertical">
 
@@ -122,5 +122,16 @@
             android:layout_above="@id/bottom_navigation"/>
     </LinearLayout>
 
+    <RelativeLayout
+        android:id="@+id/splash_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#2196F3">
+        <ImageView
+            android:layout_width="300dp"
+            android:layout_height="100dp"
+            android:layout_centerInParent="true"
+            android:src="@mipmap/logo"/>
+    </RelativeLayout>
 
 </RelativeLayout>

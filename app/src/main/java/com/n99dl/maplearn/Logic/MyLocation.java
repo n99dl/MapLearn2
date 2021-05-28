@@ -1,4 +1,4 @@
-package com.n99dl.maplearn.data;
+package com.n99dl.maplearn.Logic;
 
 public class MyLocation {
     private double latitude;

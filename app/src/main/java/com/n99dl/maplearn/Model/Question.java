@@ -1,4 +1,4 @@
-package com.n99dl.maplearn.data;
+package com.n99dl.maplearn.Model;
 
 public class Question {
 

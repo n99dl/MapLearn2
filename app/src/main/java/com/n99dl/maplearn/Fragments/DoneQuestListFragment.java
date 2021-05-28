@@ -17,9 +17,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.n99dl.maplearn.Adapter.QuestAdapter;
+import com.n99dl.maplearn.Logic.DatabaseKey;
 import com.n99dl.maplearn.R;
-import com.n99dl.maplearn.data.GameManager;
-import com.n99dl.maplearn.data.Quest;
+import com.n99dl.maplearn.Logic.GameManager;
+import com.n99dl.maplearn.Model.Quest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ public class DoneQuestListFragment extends Fragment {
         readUndoneQuest();
 
         questDoneIds = new ArrayList<>();
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("doneQuests").child(GameManager.getInstance().getPlayer().getId());
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("done_quest").child(GameManager.getInstance().getPlayer().getId());
         reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -71,7 +72,7 @@ public class DoneQuestListFragment extends Fragment {
     }
 
     private void readUndoneQuest() {
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child("QuestSets").child("Set1");
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_QUEST_SET).child("set_1");
         reference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {

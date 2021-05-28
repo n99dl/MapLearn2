@@ -1,5 +1,6 @@
 package com.n99dl.maplearn.Fragments;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Intent;
@@ -33,13 +34,14 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
-import com.n99dl.maplearn.ProfileActivity;
+import com.n99dl.maplearn.Logic.DatabaseKey;
 import com.n99dl.maplearn.R;
-import com.n99dl.maplearn.data.GameManager;
-import com.n99dl.maplearn.data.Player;
-import com.n99dl.maplearn.data.User;
+import com.n99dl.maplearn.Logic.GameManager;
+import com.n99dl.maplearn.Logic.Player;
+import com.n99dl.maplearn.Model.User;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -81,20 +83,30 @@ public class ProfileFragment extends Fragment {
         Player player = GameManager.getInstance().getPlayer();
         tv_username.setText(player.getUsername());
         tv_email.setText(player.getEmail());
-        tv_questDoneCount.setText("" + player.getTotalQuestDone());
-        tv_quizDoneCount.setText("" + player.getTotalQuizDone());
+        tv_questDoneCount.setText(String.valueOf(player.getTotalQuestDone()));
+        tv_quizDoneCount.setText(String.valueOf(player.getTotalQuizDone()));
+        if (!player.getFullname().equals("default")) {
+            isFullNameSet = true;
+            et_fullname.setText(player.getFullname());
+        } else isFullNameSet = false;
 
         storageReference = FirebaseStorage.getInstance().getReference("profile_image_uploads");
 
-        DatabaseReference image_reference = FirebaseDatabase.getInstance().getReference().child("Users").child(player.getId());
+        DatabaseReference image_reference = FirebaseDatabase.getInstance().getReference()
+                .child(DatabaseKey.KEY_USER)
+                .child(player.getId());
         image_reference.addValueEventListener(new ValueEventListener() {
+            @SuppressLint("NewApi")
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 User user = dataSnapshot.getValue(User.class);
+                assert user != null;
                 if (user.getImageURL().equals("default")) {
                     iv_profile_image.setImageResource(R.mipmap.ic_profile_default);
                 } else {
-                    Glide.with(getContext()).load(user.getImageURL()).into(iv_profile_image);
+                    Glide.with(Objects.requireNonNull(getContext()))
+                            .load(user.getImageURL())
+                            .into(iv_profile_image);
                 }
             }
 
@@ -103,14 +115,11 @@ public class ProfileFragment extends Fragment {
 
             }
         });
-        if (!player.getFullname().equals("default")) {
-            isFullNameSet = true;
-            et_fullname.setText(player.getFullname());
-        } else isFullNameSet = false;
+
         et_fullname.setEnabled(false);
         et_fullname.setInputType(InputType.TYPE_NULL);
 
-        reference = FirebaseDatabase.getInstance().getReference().child("Users").child(player.getId()).child("fullname");
+        reference = FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_USER).child(player.getId()).child("fullname");
         btn_settings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -147,7 +156,7 @@ public class ProfileFragment extends Fragment {
                 Toast.makeText(getContext(), "Please enter your full name!", Toast.LENGTH_LONG).show();
             } else {
                 isFullNameSet = true;
-                reference = FirebaseDatabase.getInstance().getReference().child("Users").child(GameManager.getInstance().getPlayer().getId()).child("fullname");
+                reference = FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_USER).child(GameManager.getInstance().getPlayer().getId()).child("fullname");
                 reference.setValue(fullnameText);
                 tv_edit_profilePic.setVisibility(View.GONE);
                 tv_fullname_title.setText("Full name");
@@ -196,7 +205,8 @@ public class ProfileFragment extends Fragment {
                         Uri downloadUri = task.getResult();
                         String mUri = downloadUri.toString();
 
-                        reference = FirebaseDatabase.getInstance().getReference("Users").child(GameManager.getInstance().getPlayer().getId());
+                        reference = FirebaseDatabase.getInstance().getReference(DatabaseKey.KEY_USER)
+                                .child(GameManager.getInstance().getPlayer().getId());
                         HashMap<String, Object> hashMap = new HashMap<>();
                         hashMap.put("imageURL",mUri);
                         reference.updateChildren(hashMap);

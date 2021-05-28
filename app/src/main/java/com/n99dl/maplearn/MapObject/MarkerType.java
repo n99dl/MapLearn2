@@ -1,4 +1,7 @@
-package com.n99dl.maplearn.data;
+package com.n99dl.maplearn.MapObject;
+
+import com.n99dl.maplearn.Model.Quest;
+import com.n99dl.maplearn.Model.User;
 
 public class MarkerType {
     public enum Type {

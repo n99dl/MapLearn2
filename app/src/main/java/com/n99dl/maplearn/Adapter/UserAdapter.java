@@ -12,9 +12,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.n99dl.maplearn.ProfileActivity;
+import com.n99dl.maplearn.Activities.ProfileActivity;
 import com.n99dl.maplearn.R;
-import com.n99dl.maplearn.data.User;
+import com.n99dl.maplearn.Model.User;
 
 import java.util.List;
 

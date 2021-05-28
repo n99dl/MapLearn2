@@ -1,7 +1,6 @@
 package com.n99dl.maplearn.Adapter;
 
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,10 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.n99dl.maplearn.ProfileActivity;
 import com.n99dl.maplearn.R;
-import com.n99dl.maplearn.data.Quest;
-import com.n99dl.maplearn.data.User;
+import com.n99dl.maplearn.Model.Quest;
 
 import java.util.List;
 

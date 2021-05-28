@@ -1,4 +1,4 @@
-package com.n99dl.maplearn;
+package com.n99dl.maplearn.Activities;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,12 +12,9 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.n99dl.maplearn.data.GameManager;
-import com.n99dl.maplearn.data.Quest;
-
-import org.w3c.dom.Text;
-
-import java.util.HashMap;
+import com.n99dl.maplearn.Logic.GameManager;
+import com.n99dl.maplearn.Model.Quest;
+import com.n99dl.maplearn.R;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -45,13 +42,11 @@ public class QuestActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        final Long id = intent.getLongExtra("questId", -1);
         quest = GameManager.getInstance().getSelectingQuest();
-
         if (quest == null)
             finish();
-
         tv_quest_name.setText(quest.getName());
+        getSupportActionBar().setTitle(quest.getName());
         if (quest.getImageURL().equals("default")) {
             iv_quest_image.setImageResource(R.mipmap.ic_profile_default);
         } else {
@@ -90,6 +85,7 @@ public class QuestActivity extends AppCompatActivity {
             case (android.R.id.home):
 //                GameManager.getInstance().clearSelectingQuest();
                 Intent intent = new Intent(QuestActivity.this, MapsActivity.class);
+
                 startActivity(intent);
                 finish();
                 return true;

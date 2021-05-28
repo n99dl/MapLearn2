@@ -1,8 +1,7 @@
-package com.n99dl.maplearn;
+package com.n99dl.maplearn.Activities;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -17,7 +16,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.n99dl.maplearn.data.GameManager;
+import com.n99dl.maplearn.R;
 import com.rengwuxian.materialedittext.MaterialEditText;
 
 public class LogInActivity extends AppCompatActivity {

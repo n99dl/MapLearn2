@@ -5,14 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/profile_activity_root"
-    tools:context=".ProfileActivity">
+    tools:context=".Activities.ProfileActivity">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
-        tools:context=".MapsActivity">
+        tools:context=".Activities.MapsActivity">
 
         <RelativeLayout
             android:id="@+id/rellay1"

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".LogInActivity"
+    tools:context=".Activities.LogInActivity"
     android:background="@color/colorPrimary">
 
 
@@ -74,15 +74,12 @@
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="58dp"
+    <ImageView
+        android:layout_width="300dp"
+        android:layout_height="100dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="166dp"
-        android:text="MapLearn"
-        android:textSize="30sp"
-        android:textStyle="bold" />
+        android:layout_marginTop="150dp"
+        android:src="@mipmap/logo"/>
 
 </RelativeLayout>

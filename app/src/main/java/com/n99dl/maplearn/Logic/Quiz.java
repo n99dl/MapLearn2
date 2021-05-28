@@ -1,11 +1,13 @@
-package com.n99dl.maplearn.data;
+package com.n99dl.maplearn.Logic;
+
+import com.n99dl.maplearn.Model.Question;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Quiz {
     private List<Question> questionList;
-    private float currentHighScore;
+    private double currentHighScore;
 
     public Quiz() {
         questionList = new ArrayList<>();
@@ -16,7 +18,7 @@ public class Quiz {
         return questionList;
     }
 
-    public float getCurrentHighScore() {
+    public double getCurrentHighScore() {
         return currentHighScore;
     }
 
@@ -24,7 +26,7 @@ public class Quiz {
         this.questionList = questionList;
     }
 
-    public void setCurrentHighScore(float currentHighScore) {
+    public void setCurrentHighScore(double currentHighScore) {
         this.currentHighScore = currentHighScore;
     }
 }

@@ -1,9 +1,8 @@
-package com.n99dl.maplearn;
+package com.n99dl.maplearn.Activities;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.FragmentActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -20,6 +19,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.n99dl.maplearn.Logic.DatabaseKey;
+import com.n99dl.maplearn.R;
 import com.rengwuxian.materialedittext.MaterialEditText;
 
 import java.util.HashMap;
@@ -76,7 +77,7 @@ public class RegisterActivity extends AppCompatActivity {
                     assert firebaseUser != null;
                     String userId = firebaseUser.getUid();
 
-                    reference = FirebaseDatabase.getInstance().getReference("Users").child(userId);
+                    reference = FirebaseDatabase.getInstance().getReference(DatabaseKey.KEY_USER).child(userId);
                     HashMap<String, String> hashMap = new HashMap<>();
                     hashMap.put("id", userId);
                     hashMap.put("username", username);

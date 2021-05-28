@@ -1,4 +1,4 @@
-package com.n99dl.maplearn;
+package com.n99dl.maplearn.Activities;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -15,10 +15,10 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.n99dl.maplearn.data.GameManager;
-import com.n99dl.maplearn.data.Question;
+import com.n99dl.maplearn.Logic.GameManager;
+import com.n99dl.maplearn.Model.Question;
+import com.n99dl.maplearn.R;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class QuestionActivity extends AppCompatActivity implements View.OnClickListener {
@@ -48,17 +48,12 @@ public class QuestionActivity extends AppCompatActivity implements View.OnClickL
     }
 
     private void getQuestionList() {
-//        questionList = new ArrayList<>();
-//        questionList.add(new Question("Question 1","A","B","C","D", 1));
-//        questionList.add(new Question("Question 2","oA","oB","oC","oD", 2));
-//        questionList.add(new Question("Question 3","bA","bB","bC","bD", 3));
-//        questionList.add(new Question("Question 4","4A","4B","4C","4D", 4));
         if (GameManager.getInstance().getQuiz() != null) {
             questionList = GameManager.getInstance().getQuiz().getQuestionList();
         } else {
+            //No quiz found for this quest
             finish();
         }
-
         setQuestion();
     }
 
@@ -106,6 +101,7 @@ public class QuestionActivity extends AppCompatActivity implements View.OnClickL
         else {
             //Wrong answer
             ((Button)view).setBackgroundTintList(ColorStateList.valueOf(Color.RED));
+            //Display right answer
             switch ((int)questionList.get((int)currentQuestion).getCorrectAns()) {
                 case 1:
                     btn_option_1.setBackgroundTintList(ColorStateList.valueOf(Color.GREEN));
@@ -141,7 +137,7 @@ public class QuestionActivity extends AppCompatActivity implements View.OnClickL
             playAnimation(btn_option_3, 0, 3);
             playAnimation(btn_option_4, 0, 4);
             tv_question_count.setText("" + (currentQuestion+1) + "/" + questionList.size());
-    }
+        }
     }
 
     private void FinishQuiz() {

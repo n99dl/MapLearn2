@@ -4,9 +4,9 @@ package com.n99dl.maplearn.utilities;
 import android.location.Location;
 import android.util.Log;
 
-import com.n99dl.maplearn.data.MyLocation;
-import com.n99dl.maplearn.data.Quest;
-import com.n99dl.maplearn.data.Player;
+import com.n99dl.maplearn.Logic.MyLocation;
+import com.n99dl.maplearn.Model.Quest;
+import com.n99dl.maplearn.Logic.Player;
 
 public class GameLogic {
 

@@ -1,4 +1,4 @@
-package com.n99dl.maplearn;
+package com.n99dl.maplearn.Activities;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,28 +12,27 @@ import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.google.android.gms.maps.model.Circle;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.n99dl.maplearn.Adapter.UserAdapter;
-import com.n99dl.maplearn.data.GameManager;
-import com.n99dl.maplearn.data.Player;
-import com.n99dl.maplearn.data.User;
+import com.n99dl.maplearn.Logic.DatabaseKey;
+import com.n99dl.maplearn.Logic.GameManager;
+import com.n99dl.maplearn.Logic.Player;
+import com.n99dl.maplearn.Model.User;
+import com.n99dl.maplearn.R;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
-public class AddFriendActivity extends AppCompatActivity {
+public class FindUserActivity extends AppCompatActivity {
 
     private CircleImageView civ_search;
     private EditText et_search_user;
@@ -55,7 +54,7 @@ public class AddFriendActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setHasFixedSize(true);
-        recyclerView.setLayoutManager(new LinearLayoutManager(AddFriendActivity.this));
+        recyclerView.setLayoutManager(new LinearLayoutManager(FindUserActivity.this));
 
         civ_search = findViewById(R.id.civ_search);
         et_search_user = findViewById(R.id.et_search_user);
@@ -86,7 +85,7 @@ public class AddFriendActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case (android.R.id.home):
-                Intent intent = new Intent(AddFriendActivity.this, MapsActivity.class);
+                Intent intent = new Intent(FindUserActivity.this, MapsActivity.class);
                 startActivity(intent);
                 finish();
                 return true;
@@ -96,7 +95,7 @@ public class AddFriendActivity extends AppCompatActivity {
 
     private void searchUser(String key) {
         final Player player = GameManager.getInstance().getPlayer();
-        Query query = FirebaseDatabase.getInstance().getReference("Users").orderByChild("username")
+        Query query = FirebaseDatabase.getInstance().getReference(DatabaseKey.KEY_USER).orderByChild("username")
                 .startAt(key)
                 .endAt(key);
         query.addValueEventListener(new ValueEventListener() {
@@ -114,7 +113,7 @@ public class AddFriendActivity extends AppCompatActivity {
                     }
                 }
 
-                userAdapter = new UserAdapter(AddFriendActivity.this, mUsers);
+                userAdapter = new UserAdapter(FindUserActivity.this, mUsers);
                 recyclerView.setAdapter(userAdapter);
             }
 

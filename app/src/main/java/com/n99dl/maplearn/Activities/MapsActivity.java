@@ -1,4 +1,4 @@
-package com.n99dl.maplearn;
+package com.n99dl.maplearn.Activities;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 
 import android.Manifest;
 import android.content.Intent;
@@ -16,6 +15,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -26,6 +26,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -57,19 +58,19 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.n99dl.maplearn.Fragments.EmptyFragment;
 import com.n99dl.maplearn.Fragments.MainFragmentManager;
-import com.n99dl.maplearn.Fragments.ProfileFragment;
 import com.n99dl.maplearn.Fragments.QuestFragment;
-import com.n99dl.maplearn.Fragments.SocialFragment;
+import com.n99dl.maplearn.Logic.DatabaseKey;
+import com.n99dl.maplearn.Logic.DefaultValue;
 import com.n99dl.maplearn.MapObject.PlayerMarker;
 import com.n99dl.maplearn.MapObject.QuestMarker;
-import com.n99dl.maplearn.data.GameManager;
-import com.n99dl.maplearn.data.MarkerType;
-import com.n99dl.maplearn.data.MyLocation;
-import com.n99dl.maplearn.data.Player;
-import com.n99dl.maplearn.data.Quest;
-import com.n99dl.maplearn.data.User;
+import com.n99dl.maplearn.Logic.GameManager;
+import com.n99dl.maplearn.MapObject.MarkerType;
+import com.n99dl.maplearn.Logic.MyLocation;
+import com.n99dl.maplearn.Logic.Player;
+import com.n99dl.maplearn.Model.Quest;
+import com.n99dl.maplearn.Model.User;
+import com.n99dl.maplearn.R;
 import com.n99dl.maplearn.utilities.GameLogic;
 
 import java.util.ArrayList;
@@ -103,6 +104,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private TextView tv_username, tv_nearby_quest_guide;
     private ImageButton btn_back, btn_nav, btn_add_friend;
     private BottomNavigationView bottom_navigation;
+    private RelativeLayout splash_layout;
 
     private boolean isRequestCameraRecenter = true;
     private final int MIN_TIME = 1000;
@@ -137,20 +139,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .findFragmentById(R.id.map);
         googleSupportMapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
+        assert googleSupportMapFragment != null;
         googleSupportMapFragment.getMapAsync(this);
-
-        locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000 * DEFAULT_UPDATE_INTERVAL);
-        locationRequest.setFastestInterval(1000 * FASTEST_UPDATE_INTERVAL);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        locationCallBack = new LocationCallback() {
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult) {
-                super.onLocationResult(locationResult);
-                saveLocation(locationResult.getLastLocation());
-            }
-        };
 
         questMarkerList = new ArrayList<>();
         playerMarkerList = new ArrayList<>();
@@ -162,6 +152,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         updateGPS();
         startLocationUpdate();
+
     }
 
     private Fragment selectingFragment;
@@ -205,6 +196,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return true;
             }
         });
+        bottom_navigation.setVisibility(View.GONE);
 
         iw_profile_image = findViewById(R.id.iw_profile_image);
         tv_username = findViewById(R.id.tv_username);
@@ -214,6 +206,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         btn_add_friend = findViewById(R.id.btn_add_friend);
         btn_add_friend.setVisibility(View.GONE);
         tv_nearby_quest_guide.setVisibility(View.GONE);
+        splash_layout = findViewById(R.id.splash_layout);
 
         btn_nav.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -252,7 +245,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         btn_add_friend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MapsActivity.this, AddFriendActivity.class);
+                Intent intent = new Intent(MapsActivity.this, FindUserActivity.class);
                 startActivity(intent);
             }
         });
@@ -267,7 +260,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
     private void readUser() {
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        currentUserReference = FirebaseDatabase.getInstance().getReference().child("Users").child(uid);
+        currentUserReference = FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_USER).child(uid);
         currentUserReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -286,6 +279,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             //iw_profile_image.setImageResource(R.mipmap.ic_profile_default);
                             Glide.with(MapsActivity.this).load(player.getImageURL()).into(iw_profile_image);
                         }
+                        //buffer time
+                        Handler handler = new Handler();
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                hideSplashScreen();
+                            }
+                        }, 2000);
                         //Toast.makeText(MapsActivity.this, "Logged In, UID: " + player.getId(), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
                         Toast.makeText(MapsActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -300,6 +301,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
+    private void hideSplashScreen() {
+        splash_layout.setVisibility(View.GONE);
+        bottom_navigation.setVisibility(View.VISIBLE);
+    }
+
     public QuestMarker getQuestMarker(long id) {
         for (QuestMarker questMarker: questMarkerList) {
             if (questMarker.getId() == id)
@@ -308,20 +314,38 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return null;
     }
     private void startLocationUpdate() {
+        locationRequest = new LocationRequest();
+        locationRequest.setInterval(1000 * DEFAULT_UPDATE_INTERVAL);
+        locationRequest.setFastestInterval(1000 * FASTEST_UPDATE_INTERVAL);
+        locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+
+        locationCallBack = new LocationCallback() {
+            @Override
+            public void onLocationResult(@NonNull LocationResult locationResult) {
+                if (locationResult!= null) {
+                    super.onLocationResult(locationResult);
+                    saveLocation(locationResult.getLastLocation());
+                }
+
+            }
+        };
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, null);
         updateGPS();
     }
     private void updateGPS() {
         //get permission from user to track gps
         //get current loc from fused client
-        //update UI
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             //permission provided
+            Log.d("gps", "updateGPS: permission granted");
             fusedLocationProviderClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
                 @Override
                 public void onSuccess(Location location) {
+                    if (location != null)
                     saveLocation(location);
+                    else
+                        Log.d("gps", "updateGPS: null location");
                 }
             });
         } else {
@@ -331,7 +355,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
     private void readLocationChanges() {
-        reference = FirebaseDatabase.getInstance().getReference("all_users_locations").child(GameManager.getInstance().getPlayer().getId());
+        reference = FirebaseDatabase.getInstance().getReference(DatabaseKey.KEY_LOCATION).child(GameManager.getInstance().getPlayer().getId());
         reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -347,7 +371,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             }
                         }
                     } catch (Exception e) {
-                        //Toast.makeText(MapsActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MapsActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -370,7 +394,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         for (Quest quest: questList) {
             LatLng questPosition = new LatLng(quest.getLatitude(), quest.getLongitude());
             String questName = quest.getName();
-            Marker marker = mMap.addMarker(new MarkerOptions().position(questPosition).title(questName));
+            Marker marker = mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.mipmap.quest_mark))
+                    .position(questPosition).title(questName));
             MarkerType markerType = new MarkerType(MarkerType.Type.QUEST);
             markerType.setQuest(quest);
             marker.setTag(markerType);
@@ -396,6 +421,25 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        uiOnMapReady();
+        mMap = googleMap;
+        mMap.setOnMarkerClickListener(this);
+        // Add player marker at default position
+        addPlayerMarker();
+        //load quest marker on map
+        loadQuest();
+    }
+    private void addPlayerMarker() {
+
+        LatLng me = new LatLng(DefaultValue.PLAYER_DEFAULT_LAT, DefaultValue.PLAYER_DEFAULT_LONG);
+        myMarker = mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.mipmap.player_marker)).position(me).title("Me"));
+        MarkerType markerType = new MarkerType(MarkerType.Type.PLAYER);
+        myMarker.setTag(markerType);
+        mMap.getUiSettings().setAllGesturesEnabled(true);
+        mMap.moveCamera(CameraUpdateFactory.zoomTo(15.0f));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(me));
+    }
+    private void uiOnMapReady() {
         //Additional UI
         tb_normal = (Toolbar) findViewById(R.id.toolbar);
         //tb_normal.setVisibility(View.GONE);
@@ -409,25 +453,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             actionBar = getSupportActionBar();
             actionBar.setTitle("");
         }
-        mMap = googleMap;
-        mMap.setOnMarkerClickListener(this);
-        // Add a marker in Sydney and move the camera
-        LatLng me = new LatLng(21.03730791971016, 105.78235822524783);
-        myMarker = mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)).position(me).title("Me"));
-        MarkerType markerType = new MarkerType(MarkerType.Type.PLAYER);
-        //markerType.setPlayer(quest);
-        myMarker.setTag(markerType);
-        //mMap.setMinZoomPreference(12);
-        mMap.getUiSettings().setZoomControlsEnabled(true);
-        mMap.getUiSettings().setAllGesturesEnabled(true);
-        mMap.moveCamera(CameraUpdateFactory.zoomTo(15.0f));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(me));
-        loadQuest();
     }
-
     private void saveLocation(Location location) {
+        Log.d("gps", "updateGPS: location changed");
         if (GameManager.getInstance().getPlayer() != null) {
-            reference = FirebaseDatabase.getInstance().getReference().child("all_users_locations").child(GameManager.getInstance().getPlayer().getId());
+            reference = FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_LOCATION).child(GameManager.getInstance().getPlayer().getId());
             MyLocation myLocation = new MyLocation(location.getLatitude(), location.getLongitude());
             reference.setValue(myLocation);
         }
@@ -446,17 +476,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Toast.makeText(this, "This app require permission ro be granted to work properly", Toast.LENGTH_SHORT).show();
                     finish();
                 }
-        }
-    }
-
-    private void questClicked(Quest quest) {
-        if (GameLogic.isInQuestRadius(quest, GameManager.getInstance().getPlayer())) {
-//            showInQuestPlayers(quest);
-            GameManager.getInstance().setSelectingQuest(quest);
-            Intent intent = new Intent(this, QuestActivity.class);
-            startActivity(intent);
-        } else {
-            Toast.makeText(this, "You have to be within the quest circle to do this quest", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -484,20 +503,24 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
         mapMode = MapMode.NEARBY_PLAYER_VIEW;
         playerMarkerList.clear();
-        reference = FirebaseDatabase.getInstance().getReference().child("all_users_locations");
+        reference = FirebaseDatabase.getInstance().getReference().child(DatabaseKey.KEY_LOCATION);
         reference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot dataSnapshot: snapshot.getChildren()) {
                     MyLocation location = dataSnapshot.getValue(MyLocation.class);
+                    assert location != null;
                     if (GameLogic.isLocationInQuestRadius(quest, location)) {
                         String id = dataSnapshot.getKey();
+                        assert id != null;
                         if (!id.equals(GameManager.getInstance().getPlayer().getId())) {
                             LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                            Marker newMaker = mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)).position(latLng).title("Me"));
+                            Marker newMaker = mMap.addMarker(new MarkerOptions()
+                                    .icon(BitmapDescriptorFactory.fromResource(R.mipmap.other_player_mark))
+                                    .position(latLng)
+                                    .title("Other_PLayer"));
                             MarkerType markerType = new MarkerType(MarkerType.Type.OTHER_PLAYER);
                             newMaker.setTag(markerType);
-                            Log.d("quest test: ", "" + id);
                             PlayerMarker playerMarker = new PlayerMarker(newMaker, id);
                             playerMarkerList.add(playerMarker);
                         }
@@ -542,13 +565,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onMarkerClick(Marker marker) {
         MarkerType markerType = (MarkerType)marker.getTag();
-        if (markerType.getType() == MarkerType.Type.QUEST) {
-            Toast.makeText(this, "Quest clicked", Toast.LENGTH_SHORT).show();
+        if (markerType == null) return false;
+        if (markerType.getType() == MarkerType.Type.QUEST && mapMode == MapMode.NORMAL_VIEW) {
             questClicked(markerType.getQuest());
-        } else {
-            Toast.makeText(this, "Not a quest clicked", Toast.LENGTH_SHORT).show();
         }
         return true;
+    }
+
+    private void questClicked(Quest quest) {
+        if (GameLogic.isInQuestRadius(quest, GameManager.getInstance().getPlayer())) {
+            GameManager.getInstance().setSelectingQuest(quest);
+            Intent intent = new Intent(this, QuestActivity.class);
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "You have to be within the quest circle to do this quest", Toast.LENGTH_LONG).show();
+        }
     }
 
     protected void onResume() {
